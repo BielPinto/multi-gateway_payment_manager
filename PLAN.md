@@ -41,10 +41,17 @@ Plano de implementação em fases. Validação do usuário antes de cada fase.
 - **PurchaseService**: valida produtos, calcula amount, idempotency_key (janela 5 min), cria cliente se não existir, cria Transaction (PENDING) e TransactionProducts, mascara cartão (só últimos 4), chama selector.charge, atualiza para PAID ou FAILED.
 - **RefundService**: valida transação PAID e não REFUNDED, chama gateway original para reembolso, atualiza status para REFUNDED.
 
-### Fase 4 – Rotas, controllers e validação
+### Fase 4 – Rotas, controllers e validação (concluída)
 - Rotas públicas: POST /login, POST /purchase
 - Rotas privadas (JWT + roles): gateways, users, products, clients, transactions, refund
 - Validators (VineJS ou equivalente), handler de exceções JSON
+
+#### Resumo da Fase 4
+- **JWT**: `JwtService` (jose), `AuthMiddleware` (Bearer), `RoleMiddleware` (ADMIN, MANAGER, FINANCE, USER). Contrato `contracts/auth.ts` estende `HttpContext` com `auth.user`.
+- **Rotas públicas**: `POST /login` (email, password → token + user), `POST /purchase` (clientName, clientEmail, items, cardNumber, cvv, idempotencyKey opcional).
+- **Rotas privadas** (prefixo `/api`, middleware `auth`): gateways (list, show, priority/activate/deactivate com role ADMIN), users CRUD (ADMIN, MANAGER), products CRUD (ADMIN, MANAGER, FINANCE), clients list/show, transactions list/show, `POST /api/transactions/:id/refund` (ADMIN, FINANCE).
+- **Validators** (VineJS): LoginValidator, PurchaseValidator, UserValidator (create/update), ProductValidator (create/update), GatewayValidator (priority). Validação no controller com `validator.validate(ctx.request.body())`.
+- **Exception handler**: `ValidationError` → 422 + messages; respostas JSON padronizadas.
 
 ### Fase 5 – TDD, Docker e documentação
 - Testes unitários e de integração; gateways-mock no compose

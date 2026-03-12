@@ -94,3 +94,55 @@ const transaction = await refund.execute(transactionId) // ID da transação no 
 Para rodar fora do Ace (ex.: `node scripts/purchase.js`), é preciso **inicializar o app Adonis** antes (carregar env, DB, etc.). O jeito recomendado é usar um **comando Ace** como os `demo:purchase` e `demo:refund`, ou chamar esses serviços a partir de **controllers** na Fase 4.
 
 Resumo: use **Ace** para testes rápidos (`demo:purchase`, `demo:refund`) e, quando existirem rotas, use **controllers** que chamam `PurchaseService` e `RefundService`.
+
+---
+
+## API REST (Fase 4)
+
+### Rotas públicas
+
+**Login** (retorna JWT):
+
+```bash
+curl -X POST http://localhost:3333/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin@example.com","password":"admin123"}'
+# Resposta: { "token": "...", "user": { "id", "email", "role" } }
+```
+
+**Compra**:
+
+```bash
+curl -X POST http://localhost:3333/purchase \
+  -H "Content-Type: application/json" \
+  -d '{
+    "clientName": "Fulano",
+    "clientEmail": "fulano@email.com",
+    "items": [{"productId": 1, "quantity": 2}],
+    "cardNumber": "5569000000006063",
+    "cvv": "010"
+  }'
+# idempotencyKey opcional para evitar cobrança duplicada
+```
+
+### Rotas privadas (prefixo `/api`, header `Authorization: Bearer <token>`)
+
+| Método | Rota | Roles | Descrição |
+|--------|------|--------|------------|
+| GET | /api/gateways | auth | Listar gateways |
+| GET | /api/gateways/:id | auth | Detalhe gateway |
+| PATCH | /api/gateways/:id/priority | ADMIN | Alterar prioridade |
+| PATCH | /api/gateways/:id/activate | ADMIN | Ativar gateway |
+| PATCH | /api/gateways/:id/deactivate | ADMIN | Desativar gateway |
+| GET/POST | /api/users, /api/users/:id | ADMIN, MANAGER | CRUD usuários |
+| GET/POST/PATCH/DELETE | /api/products, /api/products/:id | ADMIN, MANAGER, FINANCE | CRUD produtos |
+| GET | /api/clients, /api/clients/:id | auth | Listar clientes; detalhe + compras |
+| GET | /api/transactions, /api/transactions/:id | auth | Listar/detalhar transações |
+| POST | /api/transactions/:id/refund | ADMIN, FINANCE | Reembolso |
+
+Exemplo com token:
+
+```bash
+TOKEN="<token do login>"
+curl -H "Authorization: Bearer $TOKEN" http://localhost:3333/api/transactions
+```

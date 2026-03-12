@@ -19,4 +19,6 @@ export default Env.rules({
   MYSQL_USER: Env.schema.string.optional({ default: 'root' }),
   MYSQL_PASSWORD: Env.schema.string.optional({ default: '' }),
   MYSQL_DB_NAME: Env.schema.string.optional({ default: 'multi_gateway_payments' }),
+
+  JWT_SECRET: Env.schema.string.optional(),
 })
