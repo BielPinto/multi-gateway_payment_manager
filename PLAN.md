@@ -23,12 +23,23 @@ Plano de implementação em fases. Validação do usuário antes de cada fase.
 - **Comandos Ace**: `db:migrate` e `db:seed` em `commands/`; uso de `ace-manifest.json` (gerado com `node ace generate:manifest`). Assembler removido do array `commands` do `.adonisrc.json` para o manifest gerar sem erro.
 - **Uso**: MySQL em `.env` (MYSQL_HOST, MYSQL_PASSWORD, etc.). Rodar `node ace db:migrate` e `node ace db:seed` com o banco ativo.
 
-### Fase 3 – Gateways e serviços de pagamento
+### Fase 3 – Gateways e serviços de pagamento (concluída)
 - Interface PaymentGateway; tipos success/type (business|infra)
 - Gateway1AuthService (singleton, token + retry em 401)
 - Gateway1Service, Gateway2Service, GatewaySelectorService (fallback só em erro infra)
 - PurchaseService (cálculo, idempotency_key, card_last_numbers só últimos 4)
 - RefundService
+
+#### Resumo da Fase 3
+- **Tipos** (`app/Services/Gateways/Types.ts`): ChargePayload, ChargeResult, RefundPayload, RefundResult; `GatewayErrorType`: business | infra.
+- **PaymentGateway** (`PaymentGateway.ts`): interface com charge e refund.
+- **HttpClient** (`app/Services/Http/HttpClient.ts`): fetch encapsulado para chamadas aos mocks.
+- **Gateway1AuthService**: singleton com getToken(), clearToken(), configure(); retry em 401 feito no Gateway1Service (uma vez).
+- **Gateway1Service**: POST /login (via auth), POST /transactions, POST /transactions/:id/charge_back; classifica 4xx como business, 5xx/timeout como infra.
+- **Gateway2Service**: headers fixos Gateway-Auth-Token/Secret; POST /transacoes, POST /transacoes/reembolso; mesma classificação business/infra.
+- **GatewaySelectorService**: carrega gateways ativos por prioridade do banco; monta serviço por type (gateway1/gateway2); tenta charge em ordem; em erro infra tenta próximo, em erro business lança.
+- **PurchaseService**: valida produtos, calcula amount, idempotency_key (janela 5 min), cria cliente se não existir, cria Transaction (PENDING) e TransactionProducts, mascara cartão (só últimos 4), chama selector.charge, atualiza para PAID ou FAILED.
+- **RefundService**: valida transação PAID e não REFUNDED, chama gateway original para reembolso, atualiza status para REFUNDED.
 
 ### Fase 4 – Rotas, controllers e validação
 - Rotas públicas: POST /login, POST /purchase
