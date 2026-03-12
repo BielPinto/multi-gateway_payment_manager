@@ -50,6 +50,28 @@
         }
       ]
     },
+    "demo:purchase": {
+      "settings": {
+        "loadApp": true
+      },
+      "commandPath": "./commands/DemoPurchase",
+      "commandName": "demo:purchase",
+      "description": "Run a sample purchase using PurchaseService (demos Fase 3)",
+      "args": [],
+      "aliases": [],
+      "flags": []
+    },
+    "demo:refund": {
+      "settings": {
+        "loadApp": true
+      },
+      "commandPath": "./commands/DemoRefund",
+      "commandName": "demo:refund",
+      "description": "Refund the latest paid transaction (demos RefundService)",
+      "args": [],
+      "aliases": [],
+      "flags": []
+    },
     "dump:rcfile": {
       "settings": {},
       "commandPath": "@adonisjs/core/build/commands/DumpRc",
