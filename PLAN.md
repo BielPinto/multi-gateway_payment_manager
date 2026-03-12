@@ -10,10 +10,18 @@ Plano de implementação em fases. Validação do usuário antes de cada fase.
 - Scripts: dev, build, start, test. Teste de fumaça (node ace test)
 - Dockerfile e docker-compose.yml (app, db; gateways-mock comentado)
 
-### Fase 2 – Domínio e persistência
+### Fase 2 – Domínio e persistência (concluída)
 - Models: User, Gateway, Client, Product, Transaction, TransactionProduct
 - Migrations e seeds (ADMIN, gateways mock, produtos)
-- Registrar Lucid e usar MySQL
+- Lucid 18 registrado; MySQL em config/database.ts. Comandos locais: db:migrate, db:seed (npm run db:migrate / db:seed). Rodar generate:manifest após alterar commands no .adonisrc.
+
+#### Resumo da Fase 2
+- **Lucid 18**: ORM registrado; `config/database.ts` com connection `mysql` e variáveis em `env.ts`/`.env`.
+- **Migrations** (`database/migrations/`): 6 tabelas — `users` (email, password, role), `gateways` (name, is_active, priority, type, base_url, config_json), `clients`, `products` (amount em centavos), `transactions` (client_id, gateway_id, external_id, status, amount, card_last_numbers, idempotency_key), `transaction_products`.
+- **Models** (`app/Models/`): User, Gateway, Client, Product, Transaction, TransactionProduct com relações (belongsTo/hasMany).
+- **Seeders** (`database/seeders/`): 01_user_seeder (ADMIN: admin@example.com / admin123), 02_gateway_seeder (Gateway 1 e 2 com URLs e config), 03_product_seeder (3 produtos exemplo).
+- **Comandos Ace**: `db:migrate` e `db:seed` em `commands/`; uso de `ace-manifest.json` (gerado com `node ace generate:manifest`). Assembler removido do array `commands` do `.adonisrc.json` para o manifest gerar sem erro.
+- **Uso**: MySQL em `.env` (MYSQL_HOST, MYSQL_PASSWORD, etc.). Rodar `node ace db:migrate` e `node ace db:seed` com o banco ativo.
 
 ### Fase 3 – Gateways e serviços de pagamento
 - Interface PaymentGateway; tipos success/type (business|infra)

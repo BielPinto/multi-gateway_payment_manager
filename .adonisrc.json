@@ -43,7 +43,7 @@
     "Contracts": "contracts"
   },
   "metaFiles": [],
-  "commands": ["./commands", "@adonisjs/core/build/commands", "@adonisjs/assembler/build/commands"],
+  "commands": ["./commands", "@adonisjs/core/build/commands", "@adonisjs/lucid/build/commands"],
   "commandsAliases": {},
   "tests": {
     "suites": [
@@ -54,7 +54,7 @@
       }
     ]
   },
-  "providers": ["./providers/AppProvider", "@adonisjs/core"],
+  "providers": ["./providers/AppProvider", "@adonisjs/core", "@adonisjs/lucid"],
   "aceProviders": [],
   "testProviders": []
 }

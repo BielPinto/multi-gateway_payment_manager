@@ -6,14 +6,18 @@
     "dev": "node ace serve --watch",
     "build": "node ace build --production",
     "start": "node build/server.js",
-    "test": "node ace test"
+    "test": "node ace test",
+    "db:migrate": "node ace db:migrate",
+    "db:seed": "node ace db:seed"
   },
   "dependencies": {
     "@adonisjs/application": "^5.3.0",
     "@adonisjs/core": "^5.3.0",
     "@adonisjs/http-server": "^5.2.0",
-    "@adonisjs/lucid": "^22.1.0",
+    "@adonisjs/lucid": "^18.4.0",
+    "bcrypt": "^6.0.0",
     "mysql2": "^3.19.1",
+    "phc-bcrypt": "^2.0.0",
     "reflect-metadata": "^0.1.13",
     "source-map-support": "^0.5.21"
   },
