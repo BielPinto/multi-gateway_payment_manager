@@ -29,37 +29,37 @@ export class PurchaseService {
   async execute(input: PurchaseInput): Promise<Transaction> {
     const { clientName, clientEmail, items, cardNumber, cvv, idempotencyKey } = input
 
-    const products = await Product.query().whereIn('id', items.map((i) => i.productId))
+    const products = await (Product as any).query().whereIn('id', items.map((i) => i.productId))
     if (products.length !== items.length) {
       throw new Error('Invalid product id(s)')
     }
 
     const amount = items.reduce((sum, item) => {
-      const p = products.find((x) => x.id === item.productId)!
+      const p = products.find((x: any) => x.id === item.productId)!
       return sum + p.amount * item.quantity
     }, 0)
 
-    let client = await Client.findBy('email', clientEmail)
+    let client = await (Client as any).findBy('email', clientEmail)
     if (!client) {
-      client = await Client.create({ name: clientName, email: clientEmail })
+      client = await (Client as any).create({ name: clientName, email: clientEmail })
     }
 
     if (idempotencyKey) {
       const windowStart = new Date(Date.now() - IDEMPOTENCY_WINDOW_MINUTES * 60 * 1000)
-      const existing = await Transaction.query()
+      const existing = await (Transaction as any).query()
         .where('client_id', client.id)
         .where('idempotency_key', idempotencyKey)
         .where('created_at', '>=', windowStart)
         .first()
       if (existing) {
-        await existing.load('transactionProducts')
+        await (existing as any).load('transactionProducts')
         return existing
       }
     }
 
     const cardLastNumbers = cardNumber.slice(-4)
 
-    const trx = await Transaction.create({
+    const trx = await (Transaction as any).create({
       clientId: client.id,
       gatewayId: null,
       externalId: null,
@@ -70,7 +70,7 @@ export class PurchaseService {
     })
 
     for (const item of items) {
-      await TransactionProduct.create({
+      await (TransactionProduct as any).create({
         transactionId: trx.id,
         productId: item.productId,
         quantity: item.quantity,
@@ -89,7 +89,7 @@ export class PurchaseService {
       trx.externalId = result.externalId
       trx.status = STATUS_PAID
       await trx.save()
-      await trx.load('transactionProducts')
+      await (trx as any).load('transactionProducts')
       return trx
     } catch (err) {
       trx.status = STATUS_FAILED

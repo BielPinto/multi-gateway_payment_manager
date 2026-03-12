@@ -39,6 +39,6 @@ export class Gateway1AuthService {
       throw new Error(data?.message || `Gateway 1 login failed: ${status}`)
     }
     this.token = data.token
-    return this.token
+    return this.token!
   }
 }

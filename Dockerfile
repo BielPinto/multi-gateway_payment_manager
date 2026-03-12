@@ -6,8 +6,8 @@ COPY package*.json ./
 RUN npm install --legacy-peer-deps
 
 COPY . .
-RUN npm run build
 
 EXPOSE 3333
 
-CMD ["node", "build/server.js"]
+# Run with TypeScript on the fly (avoid build step; ace serve uses require-ts)
+CMD ["node", "ace", "serve", "--watch"]

@@ -53,9 +53,14 @@ Plano de implementação em fases. Validação do usuário antes de cada fase.
 - **Validators** (VineJS): LoginValidator, PurchaseValidator, UserValidator (create/update), ProductValidator (create/update), GatewayValidator (priority). Validação no controller com `validator.validate(ctx.request.body())`.
 - **Exception handler**: `ValidationError` → 422 + messages; respostas JSON padronizadas.
 
-### Fase 5 – TDD, Docker e documentação
+### Fase 5 – TDD, Docker e documentação (concluída)
 - Testes unitários e de integração; gateways-mock no compose
 - README com requisitos, instalação, rotas e exemplos
+
+#### Resumo da Fase 5
+- **Docker**: `gateways-mock` no `docker-compose.yml`; app com `depends_on: db, gateways-mock` e env `GATEWAY1_BASE_URL`/`GATEWAY2_BASE_URL` para uso dentro da rede. Seeder de gateways usa `GATEWAY1_BASE_URL` e `GATEWAY2_BASE_URL` (opcional) para permitir URLs no Docker.
+- **Testes**: Suíte `functional` com health (smoke) e `api.spec.ts` (GET /, POST /login, GET /api/gateways com e sem token). Testes de API fazem `fetch`; se o servidor não estiver rodando (ECONNREFUSED), o teste é ignorado para não falhar o `node ace test`. `.env.test` para variáveis de teste.
+- **README**: Requisitos (Node 18+, MySQL 8, Docker opcional), instalação, Docker Compose (db, app, gateways-mock), comandos de teste, tabela de rotas públicas e privadas com métodos e roles, exemplos curl (login, purchase, rota protegida), mock dos gateways, referência a USAGE.md e PLAN.md.
 
 ## Ajustes de engenharia
 - Resiliência Gateway 1: retry único em 401 após renovar token

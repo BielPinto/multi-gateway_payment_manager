@@ -1,24 +1,24 @@
-import type { HttpContext } from '@ioc:Adonis/Core/HttpContext'
+import HttpContext from '@ioc:Adonis/Core/HttpContext'
 import { RefundService } from 'App/Services/RefundService'
 
 const refundService = new RefundService()
 
 export default class RefundsController {
-  async store(ctx: HttpContext) {
+  async store(ctx: InstanceType<typeof HttpContext>) {
     const transactionId = Number(ctx.params.id)
     if (!Number.isInteger(transactionId) || transactionId < 1) {
       return ctx.response.badRequest({ error: 'Invalid transaction id' })
     }
     try {
       const transaction = await refundService.execute(transactionId)
-      await transaction.load('client')
-      await transaction.load('transactionProducts')
+      await (transaction as any).load('client')
+      await (transaction as any).load('transactionProducts')
       return ctx.response.ok({
         id: transaction.id,
         status: transaction.status,
         amount: transaction.amount,
         client: transaction.client ? { id: transaction.client.id, name: transaction.client.name, email: transaction.client.email } : null,
-        items: transaction.transactionProducts?.map((tp) => ({ productId: tp.productId, quantity: tp.quantity })) ?? [],
+        items: transaction.transactionProducts?.map((tp: any) => ({ productId: tp.productId, quantity: tp.quantity })) ?? [],
         updatedAt: transaction.updatedAt,
       })
     } catch (err) {

@@ -1,29 +1,29 @@
-import type { HttpContext } from '@ioc:Adonis/Core/HttpContext'
+import HttpContext from '@ioc:Adonis/Core/HttpContext'
 import Transaction from 'App/Models/Transaction'
 
 export default class TransactionsController {
-  async index(ctx: HttpContext) {
-    const transactions = await Transaction.query()
+  async index(ctx: InstanceType<typeof HttpContext>) {
+    const transactions = await (Transaction as any).query()
       .preload('client')
       .preload('gateway')
       .preload('transactionProducts')
       .orderBy('createdAt', 'desc')
     return ctx.response.ok(
-      transactions.map((t) => ({
+      transactions.map((t: any) => ({
         id: t.id,
         status: t.status,
         amount: t.amount,
         cardLastNumbers: t.cardLastNumbers,
         client: t.client ? { id: t.client.id, name: t.client.name, email: t.client.email } : null,
         gateway: t.gateway ? { id: t.gateway.id, name: t.gateway.name } : null,
-        items: t.transactionProducts?.map((tp) => ({ productId: tp.productId, quantity: tp.quantity })) ?? [],
+        items: t.transactionProducts?.map((tp: any) => ({ productId: tp.productId, quantity: tp.quantity })) ?? [],
         createdAt: t.createdAt,
       }))
     )
   }
 
-  async show(ctx: HttpContext) {
-    const transaction = await Transaction.query()
+  async show(ctx: InstanceType<typeof HttpContext>) {
+    const transaction = await (Transaction as any).query()
       .where('id', ctx.params.id)
       .preload('client')
       .preload('gateway')
@@ -44,7 +44,7 @@ export default class TransactionsController {
       gateway: transaction.gateway
         ? { id: transaction.gateway.id, name: transaction.gateway.name, type: transaction.gateway.type }
         : null,
-      items: transaction.transactionProducts?.map((tp) => ({ productId: tp.productId, quantity: tp.quantity })) ?? [],
+      items: transaction.transactionProducts?.map((tp: any) => ({ productId: tp.productId, quantity: tp.quantity })) ?? [],
       createdAt: transaction.createdAt,
       updatedAt: transaction.updatedAt,
     })

@@ -48,6 +48,11 @@
   "tests": {
     "suites": [
       {
+        "name": "unit",
+        "files": ["tests/unit/**/*.spec.ts"],
+        "timeout": 10000
+      },
+      {
         "name": "functional",
         "files": ["tests/functional/**/*.spec.ts"],
         "timeout": 30000

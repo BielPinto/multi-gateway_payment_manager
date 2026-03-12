@@ -6,7 +6,7 @@
 
 import Logger from '@ioc:Adonis/Core/Logger'
 import HttpExceptionHandler from '@ioc:Adonis/Core/HttpExceptionHandler'
-import type { HttpContext } from '@ioc:Adonis/Core/HttpContext'
+import HttpContext from '@ioc:Adonis/Core/HttpContext'
 import { ValidationError } from '@vinejs/vine'
 
 export default class ExceptionHandler extends HttpExceptionHandler {
@@ -14,7 +14,7 @@ export default class ExceptionHandler extends HttpExceptionHandler {
     super(Logger)
   }
 
-  async handle(error: unknown, ctx: HttpContext) {
+  async handle(error: unknown, ctx: InstanceType<typeof HttpContext>) {
     if (error instanceof ValidationError) {
       return ctx.response.status(422).json({
         error: 'Validation failed',
@@ -31,7 +31,7 @@ export default class ExceptionHandler extends HttpExceptionHandler {
     return super.handle(error, ctx)
   }
 
-  async report(error: unknown, ctx: HttpContext) {
+  async report(error: unknown, ctx: InstanceType<typeof HttpContext>) {
     if (error instanceof ValidationError) {
       return
     }

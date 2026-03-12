@@ -1,12 +1,12 @@
-import type { HttpContext } from '@ioc:Adonis/Core/HttpContext'
+import HttpContext from '@ioc:Adonis/Core/HttpContext'
 import Gateway from 'App/Models/Gateway'
-import { gatewayPriorityValidator, gatewayActiveValidator } from 'App/Validators/GatewayValidator'
+import { gatewayPriorityValidator } from 'App/Validators/GatewayValidator'
 
 export default class GatewaysController {
-  async index(ctx: HttpContext) {
-    const gateways = await Gateway.query().orderBy('priority', 'asc')
+  async index(ctx: InstanceType<typeof HttpContext>) {
+    const gateways = await (Gateway as any).query().orderBy('priority', 'asc')
     return ctx.response.ok(
-      gateways.map((g) => ({
+      gateways.map((g: any) => ({
         id: g.id,
         name: g.name,
         isActive: g.isActive,
@@ -17,8 +17,8 @@ export default class GatewaysController {
     )
   }
 
-  async show(ctx: HttpContext) {
-    const gateway = await Gateway.find(ctx.params.id)
+  async show(ctx: InstanceType<typeof HttpContext>) {
+    const gateway = await (Gateway as any).find(ctx.params.id)
     if (!gateway) {
       return ctx.response.notFound({ error: 'Gateway not found' })
     }
@@ -32,8 +32,8 @@ export default class GatewaysController {
     })
   }
 
-  async updatePriority(ctx: HttpContext) {
-    const gateway = await Gateway.find(ctx.params.id)
+  async updatePriority(ctx: InstanceType<typeof HttpContext>) {
+    const gateway = await (Gateway as any).find(ctx.params.id)
     if (!gateway) {
       return ctx.response.notFound({ error: 'Gateway not found' })
     }
@@ -49,8 +49,8 @@ export default class GatewaysController {
     })
   }
 
-  async activate(ctx: HttpContext) {
-    const gateway = await Gateway.find(ctx.params.id)
+  async activate(ctx: InstanceType<typeof HttpContext>) {
+    const gateway = await (Gateway as any).find(ctx.params.id)
     if (!gateway) {
       return ctx.response.notFound({ error: 'Gateway not found' })
     }
@@ -64,8 +64,8 @@ export default class GatewaysController {
     })
   }
 
-  async deactivate(ctx: HttpContext) {
-    const gateway = await Gateway.find(ctx.params.id)
+  async deactivate(ctx: InstanceType<typeof HttpContext>) {
+    const gateway = await (Gateway as any).find(ctx.params.id)
     if (!gateway) {
       return ctx.response.notFound({ error: 'Gateway not found' })
     }

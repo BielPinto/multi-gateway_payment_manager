@@ -9,7 +9,7 @@ const STATUS_REFUNDED = 'REFUNDED'
 
 export class RefundService {
   async execute(transactionId: number): Promise<Transaction> {
-    const transaction = await Transaction.find(transactionId)
+    const transaction = await (Transaction as any).find(transactionId)
     if (!transaction) {
       throw new Error('Transaction not found')
     }
@@ -20,7 +20,7 @@ export class RefundService {
       throw new Error('Transaction has no gateway reference')
     }
 
-    const gateway = await Gateway.find(transaction.gatewayId)
+    const gateway = await (Gateway as any).find(transaction.gatewayId)
     if (!gateway?.isActive) {
       throw new Error('Gateway not available')
     }

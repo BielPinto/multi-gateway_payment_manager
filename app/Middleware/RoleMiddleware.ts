@@ -1,4 +1,4 @@
-import type { HttpContext } from '@ioc:Adonis/Core/HttpContext'
+import HttpContext from '@ioc:Adonis/Core/HttpContext'
 
 export type Role = 'ADMIN' | 'MANAGER' | 'FINANCE' | 'USER'
 
@@ -9,7 +9,7 @@ export type Role = 'ADMIN' | 'MANAGER' | 'FINANCE' | 'USER'
  * USER: clients, transactions (list/detail), gateways (read/activate/priority)
  */
 export default class RoleMiddleware {
-  async handle(ctx: HttpContext, next: () => Promise<void>, allowedRolesParam?: string) {
+  async handle(ctx: InstanceType<typeof HttpContext>, next: () => Promise<void>, allowedRolesParam?: string) {
     if (!ctx.auth?.user) {
       return ctx.response.unauthorized({ error: 'Authentication required' })
     }

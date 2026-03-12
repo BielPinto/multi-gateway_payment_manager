@@ -6,6 +6,7 @@
     "moduleResolution": "node",
     "esModuleInterop": true,
     "strict": true,
+    "strictPropertyInitialization": false,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "experimentalDecorators": true,
@@ -13,7 +14,6 @@
     "declaration": true,
     "declarationMap": true,
     "outDir": "./build",
-    "rootDir": "./",
     "baseUrl": "./",
     "paths": {
       "App/*": ["./app/*"],
@@ -22,6 +22,6 @@
       "Contracts/*": ["./contracts/*"]
     }
   },
-  "include": [".**/*.ts", "**/*.ts"],
+  "include": [".**/*.ts", "**/*.ts", "contracts/**/*.d.ts"],
   "exclude": ["node_modules", "build"]
 }

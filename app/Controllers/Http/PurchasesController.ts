@@ -1,11 +1,11 @@
-import type { HttpContext } from '@ioc:Adonis/Core/HttpContext'
+import HttpContext from '@ioc:Adonis/Core/HttpContext'
 import { PurchaseService } from 'App/Services/PurchaseService'
 import { purchaseValidator } from 'App/Validators/PurchaseValidator'
 
 const purchaseService = new PurchaseService()
 
 export default class PurchasesController {
-  async store(ctx: HttpContext) {
+  async store(ctx: InstanceType<typeof HttpContext>) {
     const body = await purchaseValidator.validate(ctx.request.body())
     try {
       const transaction = await purchaseService.execute({
@@ -16,15 +16,15 @@ export default class PurchasesController {
         cvv: body.cvv,
         idempotencyKey: body.idempotencyKey,
       })
-      await transaction.load('transactionProducts')
-      await transaction.load('client')
+      await (transaction as any).load('transactionProducts')
+      await (transaction as any).load('client')
       return ctx.response.created({
         id: transaction.id,
         status: transaction.status,
         amount: transaction.amount,
         cardLastNumbers: transaction.cardLastNumbers,
         client: transaction.client ? { id: transaction.client.id, name: transaction.client.name, email: transaction.client.email } : null,
-        items: transaction.transactionProducts?.map((tp) => ({ productId: tp.productId, quantity: tp.quantity })) ?? [],
+        items: transaction.transactionProducts?.map((tp: any) => ({ productId: tp.productId, quantity: tp.quantity })) ?? [],
         createdAt: transaction.createdAt,
       })
     } catch (err) {

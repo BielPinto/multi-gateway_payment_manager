@@ -8,6 +8,10 @@ import Route from '@ioc:Adonis/Core/Route'
 
 Route.get('/', async () => ({ hello: 'world' }))
 
+// Documentação da API (Swagger / OpenAPI)
+Route.get('/docs', 'SwaggerController.ui')
+Route.get('/openapi.json', 'SwaggerController.spec')
+
 // ----- Públicas -----
 Route.post('/login', 'AuthController.login')
 Route.post('/purchase', 'PurchasesController.store')
