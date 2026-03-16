@@ -27,16 +27,6 @@ async function apiPost(path: string, body: object, token?: string) {
   })
 }
 
-async function apiPatch(path: string, body: object, token?: string) {
-  const headers: Record<string, string> = { 'Content-Type': 'application/json' }
-  if (token) headers['Authorization'] = `Bearer ${token}`
-  return fetch(`${BASE_URL}${path}`, {
-    method: 'PATCH',
-    headers,
-    body: JSON.stringify(body),
-  })
-}
-
 function isConnectionRefused(err: unknown): boolean {
   const e = err as NodeJS.ErrnoException & { cause?: NodeJS.ErrnoException }
   return e?.code === 'ECONNREFUSED' || e?.cause?.code === 'ECONNREFUSED'
