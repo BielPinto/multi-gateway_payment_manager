@@ -83,8 +83,8 @@ Todas passam por:
 
 ### 4.4 Service ↔ Gateway externo
 
-- **GatewaySelectorService** carrega gateways ativos do banco (ordenados por `priority`).
-- Para cada gateway, monta uma instância que implementa **PaymentGateway** (`Gateway1Service` ou `Gateway2Service`).
+- **GatewayFactory** é o único ponto que cria instâncias de gateway a partir do registro no banco (`type`, `base_url`, `config_json`). Tanto **GatewaySelectorService** (cobrança) quanto **RefundService** (reembolso) usam a factory; assim, adicionar um novo gateway exige alteração em um só lugar.
+- **GatewaySelectorService** carrega gateways ativos do banco (ordenados por `priority`), obtém cada instância via `GatewayFactory.createFromGateway(gateway)` e delega a **chargeWithFallback**.
 - A lógica de “tentar em ordem e fazer fallback em erro de infra” está em **chargeWithFallback** (módulo puro em `app/Services/Gateways/chargeWithFallback.ts`).
 - **PurchaseService** chama `GatewaySelectorService.charge(payload)`; o selector usa `chargeWithFallback` com a lista de gateways (ou lista injetada em testes).
 - Comunicação com o gateway externo é HTTP via **HttpClient** (`app/Services/Http/HttpClient.ts`), usado por Gateway1Service e Gateway2Service.
@@ -110,11 +110,12 @@ Todas passam por:
 - Erro: `ctx.response.unauthorized()`, `ctx.response.forbidden()`, `ctx.response.badRequest()`, `ctx.response.notFound()` com `{ error: '...' }` (e, no caso de validação, `messages`).
 - O **ExceptionHandler** garante que ValidationError e erros com `status` numérico viram resposta JSON.
 
-### 5.3 Multi-gateway com fallback
+### 5.3 Multi-gateway com fallback (extensível e modular)
 
-- **PaymentGateway**: interface comum (`charge`, `refund`).
+- **PaymentGateway**: interface comum (`charge`, `refund`). Qualquer novo gateway implementa apenas essa interface.
+- **GatewayFactory**: fábrica centralizada que, dado um registro de gateway (tabela `gateways`), retorna a instância do serviço correspondente. **Um único ponto** para registrar novos tipos.
 - **Gateway1Service** / **Gateway2Service**: implementam a interface e chamam os gateways externos via HTTP.
-- **GatewaySelectorService**: obtém lista de gateways ativos (ou recebe lista em teste), chama **chargeWithFallback**.
+- **GatewaySelectorService** e **RefundService**: usam `GatewayFactory.createFromGateway(gateway)`; não conhecem os tipos concretos.
 - **chargeWithFallback** (módulo puro):
   - Sucesso em um gateway → retorna resultado.
   - Erro de **negócio** (ex.: cartão recusado) → lança; não tenta próximo.
@@ -167,7 +168,7 @@ app/
   Middleware/           # AuthMiddleware, RoleMiddleware
   Models/               # User, Gateway, Product, Client, Transaction, TransactionProduct
   Services/             # JwtService, PurchaseService, RefundService
-  Services/Gateways/    # PaymentGateway, Types, chargeWithFallback, GatewaySelectorService, Gateway1Service, Gateway2Service, Gateway1AuthService
+  Services/Gateways/    # PaymentGateway, Types, GatewayFactory, chargeWithFallback, GatewaySelectorService, Gateway1Service, Gateway2Service, Gateway1AuthService
   Services/Http/       # HttpClient
   Validators/           # LoginValidator, PurchaseValidator, UserValidator, ...
   Exceptions/Handler.ts
@@ -189,6 +190,19 @@ start/
 
 ## 9. Extensibilidade
 
-- **Novo gateway**: criar classe em `app/Services/Gateways/` implementando `PaymentGateway`; em `GatewaySelectorService.buildGatewayInstance` mapear o `gateway.type` para essa classe; cadastrar no banco (tipo, baseUrl, configJson).
+### 9.1 Como adicionar um novo gateway (modular e simples)
+
+1. **Criar o serviço** em `app/Services/Gateways/`, por exemplo `Gateway3Service.ts`, implementando a interface **PaymentGateway**:
+   - `charge(payload: ChargePayload): Promise<ChargeResult>` — converter payload para o formato da API do gateway, chamar HTTP, converter resposta para `ChargeResult` (com `success`, `externalId`, e em erro `type: 'business' | 'infra'`).
+   - `refund(payload: RefundPayload): Promise<RefundResult>` — chamar o endpoint de reembolso do gateway com `externalId`.
+
+2. **Registrar na fábrica** em `app/Services/Gateways/GatewayFactory.ts`: adicionar um `case 'gateway3':` (ou o tipo escolhido) em `createFromGateway`, instanciando o novo serviço com `baseUrl` e parâmetros lidos de `config` (parse de `configJson`).
+
+3. **Cadastrar no banco**: inserir (ou incluir em um seeder) um registro na tabela `gateways` com `name`, `is_active`, `priority`, `type` (ex.: `'gateway3'`), `base_url` e `config_json` (credenciais ou opções específicas em JSON).
+
+Nenhuma alteração é necessária em **GatewaySelectorService**, **RefundService** ou **chargeWithFallback**: eles já usam a interface e a factory. O fallback por prioridade e a distinção erro negócio/infra continuam valendo para o novo gateway.
+
+### 9.2 Outras extensões
+
 - **Nova rota**: adicionar em `start/routes.ts`; se privada, usar `.middleware(['auth'])` e opcionalmente `role:ADMIN,MANAGER,...`.
 - **Nova validação**: criar validator com VineJS em `app/Validators/` e chamar no controller.

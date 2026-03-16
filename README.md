@@ -220,6 +220,7 @@ Esta solução atende ao **Nível 3** do [teste prático  Back-end BeTalent](htt
 - **Autenticação**: JWT (header `Authorization: Bearer <token>`). Segredo: `JWT_SECRET` ou `APP_KEY` no `.env`.
 - **Valor das compras**: calculado no backend a partir dos produtos e quantidades; `amount` em centavos.
 - **Idempotência**: opcional em `POST /purchase` via `idempotencyKey` (janela de ~5 minutos).
+- **Novos gateways**: a API foi pensada para adicionar gateways de forma **simples e modular**: interface `PaymentGateway`, fábrica centralizada (`GatewayFactory`) e registro por tipo no banco. Passo a passo em [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) (seção 9.1).
 - Documentação de uso interno (seeds, comandos Ace, serviços): ver [USAGE.md](./USAGE.md).  
 - Plano de implementação por fases: ver [PLAN.md](./PLAN.md).
 
@@ -240,7 +241,7 @@ O que foi construído está em funcionamento (local e Docker). Abaixo: como a so
 | **Legibilidade do código** | Nomes claros, funções enxutas, comentários onde necessário (ex.: roles no RoleMiddleware); tipos TypeScript. |
 | **Validação dos dados** | VineJS em login, compra, usuário, produto e prioridade de gateway; regex para cartão (16 dígitos) e CVV; validação de role (enum). |
 | **Uso adequado dos recursos** | Lucid ORM, JWT (jose), bcrypt para senha, fetch para gateways; middleware de auth e role; handler de exceções para respostas JSON. |
-| **Padrões especificados** | Rotas públicas/privadas e roles (ADMIN, MANAGER, FINANCE, USER) conforme enunciado; MySQL; JSON; multi-gateway com prioridade e fallback. |
+| **Padrões especificados** | Rotas públicas/privadas e roles (ADMIN, MANAGER, FINANCE, USER) conforme enunciado; MySQL; JSON; multi-gateway com prioridade e fallback; **facilidade de adicionar novos gateways** (interface + GatewayFactory + doc em ARCHITECTURE). |
 | **Dados sensíveis** | Senha: nunca retornada (User com `serializeAs: null` no campo password); sempre hasheada com bcrypt. Cartão: apenas últimos 4 dígitos persistidos (`card_last_numbers`); número completo só em memória para envio ao gateway. JWT com segredo de env (`JWT_SECRET` ou `APP_KEY`). |
 | **Clareza na documentação** | README com requisitos, instalação, rotas, exemplos curl e Docker; USAGE.md com seeds e comandos; PLAN.md com fases e resumos. |
 
