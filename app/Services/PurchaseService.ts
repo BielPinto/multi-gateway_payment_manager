@@ -3,16 +3,15 @@ import Product from 'App/Models/Product'
 import Transaction from 'App/Models/Transaction'
 import TransactionProduct from 'App/Models/TransactionProduct'
 import { GatewaySelectorService } from './Gateways/GatewaySelectorService'
+import { computeAmountFromItems, type PurchaseItem } from './PurchaseAmount'
+
+export type { PurchaseItem, ProductForAmount } from './PurchaseAmount'
+export { computeAmountFromItems } from './PurchaseAmount'
 
 const IDEMPOTENCY_WINDOW_MINUTES = 5
 const STATUS_PENDING = 'PENDING'
 const STATUS_PAID = 'PAID'
 const STATUS_FAILED = 'FAILED'
-
-export interface PurchaseItem {
-  productId: number
-  quantity: number
-}
 
 export interface PurchaseInput {
   clientName: string
@@ -34,10 +33,10 @@ export class PurchaseService {
       throw new Error('Invalid product id(s)')
     }
 
-    const amount = items.reduce((sum, item) => {
-      const p = products.find((x: any) => x.id === item.productId)!
-      return sum + p.amount * item.quantity
-    }, 0)
+    const amount = computeAmountFromItems(
+      items,
+      products.map((p: any) => ({ id: p.id, amount: p.amount }))
+    )
 
     let client = await (Client as any).findBy('email', clientEmail)
     if (!client) {

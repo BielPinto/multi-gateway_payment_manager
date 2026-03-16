@@ -3,24 +3,21 @@ import Gateway from 'App/Models/Gateway'
 import { Gateway1Service } from './Gateways/Gateway1Service'
 import { Gateway2Service } from './Gateways/Gateway2Service'
 import { Gateway1AuthService } from './Gateways/Gateway1AuthService'
+import { validateTransactionForRefund } from './RefundValidation'
 
-const STATUS_PAID = 'PAID'
+export type { TransactionForRefundValidation } from './RefundValidation'
+export { validateTransactionForRefund } from './RefundValidation'
+
 const STATUS_REFUNDED = 'REFUNDED'
 
 export class RefundService {
   async execute(transactionId: number): Promise<Transaction> {
     const transaction = await (Transaction as any).find(transactionId)
-    if (!transaction) {
-      throw new Error('Transaction not found')
-    }
-    if (transaction.status !== STATUS_PAID) {
-      throw new Error('Transaction is not paid or already refunded')
-    }
-    if (!transaction.externalId || !transaction.gatewayId) {
-      throw new Error('Transaction has no gateway reference')
-    }
+    validateTransactionForRefund(
+      transaction ? { status: transaction.status, externalId: transaction.externalId, gatewayId: transaction.gatewayId } : null
+    )
 
-    const gateway = await (Gateway as any).find(transaction.gatewayId)
+    const gateway = await (Gateway as any).find(transaction!.gatewayId)
     if (!gateway?.isActive) {
       throw new Error('Gateway not available')
     }

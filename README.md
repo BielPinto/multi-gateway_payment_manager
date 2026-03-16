@@ -69,21 +69,32 @@ Com o compose, as variáveis `GATEWAY1_BASE_URL` e `GATEWAY2_BASE_URL` já apont
 ## Testes
 
 ```bash
-# Testes (smoke + funcionais; API tests exigem servidor rodando)
+# Todos os testes (unit + functional)
 node ace test
 # ou
 npm test
+
+# Apenas testes unitários (não exigem servidor)
+node ace test unit
+
+# Apenas testes funcionais (exigem servidor rodando)
+node ace test functional
 ```
 
 Os **resultados** aparecem no **próprio terminal**: cada teste com ✓ (passou) ou ✗ (falhou), seguido de um resumo (total, passed, failed, skipped). Se houver falhas, a lista de testes que falharam é exibida no final.
 
-- **Health (smoke)**: sempre executado.
-- **API (funcionais)**: precisam do servidor em execução. Se não houver servidor, os testes de API são ignorados (sem falha). Para rodá-los de fato:
-  - Em um terminal: `node ace serve`
-  - Em outro: `node ace test`
-- **Com Docker**: os testes **passam** com **run** (container novo só para o teste). Com **exec** costumam falhar. Use:  
-  `docker compose run --rm --no-deps app node ace test unit`
-- **TDD – Fallback dos gateways**: testes unitários em `tests/unit/gateway-fallback.spec.ts` (lógica em `app/Services/Gateways/chargeWithFallback.ts`). Rodar: `docker compose run --rm --no-deps app node ace test unit`.
+- **Unitários** (não precisam de servidor nem de gateways):
+  - `tests/unit/gateway-fallback.spec.ts`: TDD do fallback (erro infra vs negócio, idempotência do fluxo de cobrança).
+  - `tests/unit/purchase-service.spec.ts`: cálculo de amount com múltiplos itens (`computeAmountFromItems`).
+  - `tests/unit/refund-service.spec.ts`: validação de reembolso (status PAID, gateway e externalId).
+- **Funcionais (API)** (exigem servidor em execução; se não houver servidor, são ignorados sem falhar):
+  - Health, login, gateways com token.
+  - `POST /purchase` com múltiplos itens (amount e items), produto inválido (400), idempotência com `idempotencyKey`.
+  - Roles: GET /api/users e GET /api/products como USER (403), como MANAGER/FINANCE (200); POST refund como USER (403), como FINANCE (200); refund em transação inexistente (404).
+
+Para rodar os testes de API de fato: em um terminal `node ace serve`, em outro `node ace test` ou `node ace test functional`.
+
+- **Com Docker**: use `docker compose run --rm --no-deps app node ace test unit` para só os unitários. Para os funcionais, suba os serviços e rode os testes a partir do host apontando para a API no container.
 
 ## Documentação da API (Swagger)
 
@@ -137,7 +148,14 @@ Requer header: `Authorization: Bearer <token>` (token obtido em `POST /login`).
 | GET | `/api/transactions/:id` | autenticado | Detalhe da transação |
 | POST | `/api/transactions/:id/refund` | ADMIN, FINANCE | Reembolso da transação |
 
-**Roles**: `ADMIN` (acesso total), `MANAGER` (produtos e usuários), `FINANCE` (produtos e reembolso), `USER` (demais rotas autenticadas).
+### Permissões por role (Nível 3)
+
+| Role | O que pode fazer |
+|------|-------------------|
+| **ADMIN** | Acesso total: todas as rotas (gateways, usuários, produtos, clientes, transações, reembolso). |
+| **MANAGER** | Gerenciar produtos (CRUD) e usuários (CRUD). Listar/detalhar clientes, transações e gateways (sem ativar/desativar nem alterar prioridade). |
+| **FINANCE** | Gerenciar produtos (CRUD) e realizar reembolso. Listar/detalhar clientes, transações e gateways (sem ativar/desativar nem alterar prioridade). |
+| **USER** | O resto que não foi citado: listar clientes, detalhe do cliente e todas suas compras, listar transações, detalhe de transação, listar e detalhar gateways (sem ativar/desativar nem alterar prioridade). Não pode: CRUD de usuários, CRUD de produtos, reembolso. |
 
 ## Exemplos de uso
 
@@ -186,6 +204,16 @@ Para desenvolvimento e testes locais:
 
 O seed já configura os gateways com as URLs e credenciais compatíveis com esse mock. Em ambiente Docker Compose, as variáveis `GATEWAY1_BASE_URL` e `GATEWAY2_BASE_URL` apontam para o serviço `gateways-mock`.
 
+## Implementação – Nível 3 (desafio  Back-end BeTalent)
+
+Esta solução atende ao **Nível 3** do [teste prático  Back-end BeTalent](https://github.com/BeMobile/teste-pratico-backend):
+
+- **Valor da compra**: calculado no back a partir de **múltiplos produtos** e quantidades (`POST /purchase` com `items: [{ productId, quantity }, ...]`).
+- **Gateways com autenticação**: Gateway 1 (login + Bearer); Gateway 2 (headers `Gateway-Auth-Token` e `Gateway-Auth-Secret`). Mock rodando com auth no Docker Compose.
+- **Roles**: ADMIN (tudo), MANAGER (produtos e usuários), FINANCE (produtos e reembolso), USER (clientes, transações, gateways em leitura). Ver tabela em [Permissões por role](#permissões-por-role-nível-3).
+- **TDD**: testes unitários do fallback de gateways (`tests/unit/gateway-fallback.spec.ts`); testes unitários de PurchaseService e RefundService; testes de API para compra com múltiplos itens, reembolso e CRUD por role.
+- **Docker Compose**: MySQL, aplicação e mock dos gateways (imagem `matheusprotzen/gateways-mock`).
+
 ## Outras informações
 
 - **Validação**: VineJS nos payloads de login, compra, usuários, produtos e gateways.
@@ -224,14 +252,14 @@ O que foi construído está em funcionamento (local e Docker). Abaixo: como a so
 - **Rotas públicas**: `POST /login`, `POST /purchase`.
 - **Rotas privadas** (JWT + roles): CRUD usuários (ADMIN/MANAGER), CRUD produtos (ADMIN/MANAGER/FINANCE), listar/detalhar clientes e transações, ativar/desativar e prioridade de gateways (ADMIN), reembolso (ADMIN/FINANCE).
 - **Validação** (VineJS) e **respostas JSON** padronizadas no handler de exceções.
-- **Testes**: smoke, testes de API (GET /, login, gateways) e **TDD do fallback** (suite unit em `tests/unit/gateway-fallback.spec.ts`); testes de API são ignorados se o servidor não estiver rodando.
+- **Testes**: smoke; testes de API (health, login, gateways, compra com múltiplos itens, idempotência, roles, reembolso); **TDD** em testes unitários: fallback (`gateway-fallback.spec.ts`), cálculo de compra (`purchase-service.spec.ts`), validação de reembolso (`refund-service.spec.ts`). Testes de API são ignorados se o servidor não estiver rodando.
 - **Docker Compose**: MySQL, app e gateways-mock; seed com suporte a URLs dos gateways via env.
 
 ## O que ficou pendente / limitações
 
 - **Build de produção (`npm run build`)**: o compilador TypeScript do `ace build` não resolve módulos `@ioc:` e alguns tipos do Lucid/VineJS no ambiente de build; por isso o **Dockerfile** não executa `npm run build` e o container sobe com `node ace serve --watch` (TypeScript em tempo de execução). Para produção compilada seria necessário integrar o assembler/ioc-transformer ao fluxo de build ou ajustar declarações de tipos.
 - **Testes de API**: dependem do servidor rodando; não há bootstrap que suba o servidor automaticamente nos testes.
-- **Testes unitários** para outros serviços (ex.: JwtService, PurchaseService) não foram adicionados; a lógica de fallback tem suite TDD em `tests/unit/`.
+- **Testes unitários** para JwtService e para fluxo completo de PurchaseService/RefundService com DB não foram adicionados; a lógica de fallback, cálculo de amount e validação de reembolso têm suites TDD em `tests/unit/`; o comportamento de compra e reembolso é coberto pelos testes de API.
 
 ## Dificuldades encontradas
 

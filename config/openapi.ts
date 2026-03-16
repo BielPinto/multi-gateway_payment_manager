@@ -165,6 +165,33 @@ export const openApiSpec = {
           email: { type: 'string' },
         },
       },
+      ClientDetail: {
+        type: 'object',
+        description: 'Cliente e todas suas compras (transações com itens)',
+        properties: {
+          id: { type: 'integer' },
+          name: { type: 'string' },
+          email: { type: 'string' },
+          createdAt: { type: 'string', format: 'date-time' },
+          transactions: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                id: { type: 'integer' },
+                status: { type: 'string', enum: ['PENDING', 'PAID', 'FAILED', 'REFUNDED'] },
+                amount: { type: 'integer', description: 'Centavos' },
+                cardLastNumbers: { type: 'string' },
+                createdAt: { type: 'string', format: 'date-time' },
+                items: {
+                  type: 'array',
+                  items: { type: 'object', properties: { productId: { type: 'integer' }, quantity: { type: 'integer' } } },
+                },
+              },
+            },
+          },
+        },
+      },
       Transaction: {
         type: 'object',
         properties: {
@@ -452,11 +479,11 @@ export const openApiSpec = {
     '/api/clients/{id}': {
       get: {
         tags: ['Clients'],
-        summary: 'Detalhar cliente',
+        summary: 'Detalhar cliente e todas suas compras',
         security: [{ bearerAuth: [] }],
         parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'integer' } }],
         responses: {
-          '200': { description: 'Cliente', content: { 'application/json': { schema: { $ref: '#/components/schemas/Client' } } } },
+          '200': { description: 'Cliente com transações e itens', content: { 'application/json': { schema: { $ref: '#/components/schemas/ClientDetail' } } } },
           '401': { description: 'Não autenticado', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
           '404': { description: 'Não encontrado', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
         },
