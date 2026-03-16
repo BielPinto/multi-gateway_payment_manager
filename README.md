@@ -228,7 +228,13 @@ Esta solução atende ao **Nível 3** do [teste prático  Back-end BeTalent](htt
 
 ## Considerações finais
 
-O que foi construído está em funcionamento (local e Docker). Abaixo: como a solução atende aos critérios de avaliação, o que foi implementado, o que ficou pendente e as principais dificuldades encontradas.
+Conforme as orientações do teste (caso não se complete tudo no prazo):
+
+1. **Garantir que tudo que foi construído esteja em funcionamento** — O que foi entregue está em funcionamento em ambiente local e em Docker. Ver seção [Garantia de funcionamento](#garantia-de-funcionamento) abaixo.
+2. **Relatar no README quais foram as dificuldades encontradas** — Relato em [Dificuldades encontradas](#dificuldades-encontradas).
+3. **Documentar o que foi implementado e o que ficou pendente** — Resumo em [O que foi implementado](#o-que-foi-implementado) e [O que ficou pendente / limitações](#o-que-ficou-pendente--limitações).
+
+Abaixo: critérios de avaliação, implementado, pendente e dificuldades.
 
 ---
 
@@ -268,9 +274,12 @@ O que foi construído está em funcionamento (local e Docker). Abaixo: como a so
 2. **HttpContext como tipo**: o módulo exporta o valor (classe), não o tipo; foi usado `InstanceType<typeof HttpContext>` nos controllers e middlewares.
 3. **Conflito de peer deps**: `npm install` sem `--legacy-peer-deps` falha por causa de versões do Japa; documentado o uso de `--legacy-peer-deps`.
 4. **Testes com servidor**: não foi usado o bootstrap completo do Adonis que sobe o HTTP server nos testes; os testes de API usam `fetch` e, em caso de ECONNREFUSED, são ignorados para não falhar o `node ace test`.
+5. **Testes unitários sem IoC**: arquivos que importam Models/Adonis quebram no Japa (IoC não inicializado). Solução: extrair funções puras para módulos sem dependências do Adonis (`PurchaseAmount.ts`, `RefundValidation.ts`) e importá-las nos testes.
+6. **Plugin @japa/assert**: incompatibilidade de exports com o runner gerou `assert` undefined nos testes de API. Solução: usar o `assert` do Node nos testes funcionais em vez do plugin.
+7. **Docker + volume**: montar `.:/usr/src/app` sobrescreve o `node_modules` da imagem e causava "Cannot find module 'reflect-metadata'". Solução: volume dedicado para `node_modules` e comando que roda `npm install --legacy-peer-deps` antes de iniciar o app.
 
 ## Garantia de funcionamento
 
-- **Local**: `npm run dev`, `node ace db:migrate`, `node ace db:seed`; mock dos gateways em 3001/3002. Login, compra e rotas privadas com token testados via curl (exemplos no README).
-- **Docker**: `docker compose up -d` sobe db, app e gateways-mock; em seguida `docker compose exec app node ace db:migrate` e `docker compose exec app node ace db:seed`. A aplicação responde na porta 3333.
-- **Testes**: `node ace test` executa o smoke e os testes de API (se o servidor estiver rodando).
+- **Local**: `npm install --legacy-peer-deps`, `cp .env.example .env`, `node ace db:migrate`, `node ace db:seed`, `npm run dev`. Com mock dos gateways em 3001/3002 (ou Docker só do mock), login, compra e rotas privadas funcionam; exemplos curl no README.
+- **Docker**: `docker compose up -d` sobe db, app e gateways-mock (o app roda `npm install` e depois `node ace serve --watch`). Em seguida: `docker compose exec app node ace db:migrate` e `docker compose exec app node ace db:seed`. A aplicação responde na porta 3333.
+- **Testes**: `node ace test unit` não exige servidor (16 testes). `node ace test` inclui os testes de API; para estes passarem, o servidor deve estar rodando em outro terminal (`node ace serve`).
